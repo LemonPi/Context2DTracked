@@ -1,0 +1,32 @@
+{
+  "name": "context-2d-tracked",
+  "version": "1.0.0",
+  "description": "Context 2D with pen and transform tracking",
+  "main": "src/index.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "mocha test/test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/LemonPi/Context2DTracked.git"
+  },
+  "keywords": [
+    "canvas",
+    "context",
+    "CanvasRenderingContext2D",
+    "tracking",
+    "transform"
+  ],
+  "author": "Johnson Zhong",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/LemonPi/Context2DTracked/issues"
+  },
+  "homepage": "https://github.com/LemonPi/Context2DTracked#readme",
+  "dependencies": {
+    "transformation-matrix-js": "^2.7.1"
+  }
+}
