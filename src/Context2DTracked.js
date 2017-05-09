@@ -1,5 +1,9 @@
 const Matrix = require("transformation-matrix-js").Matrix;
 
+function lastElement(array) {
+    return array[array.length - 1];
+}
+
 module.exports = class Context2DTracked {
     constructor(target) {
         // use: const ctx = new Context2DTracked(canvas.getContext("2d"));
@@ -35,7 +39,7 @@ module.exports = class Context2DTracked {
             }
             if (typeof target[p] === "function") {
                 // not providing an override, then just use the default
-                if  (this[p] === "undefined") {
+                if (typeof this[p] === "undefined") {
                     this[p] = target[p].bind(target);
                 }
             }
@@ -53,9 +57,38 @@ module.exports = class Context2DTracked {
         }
     }
 
+    // new methods
+    /**
+     * Print crosshairs at the current pen location
+     */
+    trace() {
+        const x = this.penx, y = this.peny;
+        console.log(Math.round(x * 10) / 10 + this.ox, Math.round(y * 10) / 10 + this.oy);
+        // assume path
+        // has begun
+        this.context.moveTo(x - 5, y);
+        this.context.lineTo(x + 5, y);
+        this.context.moveTo(x, y + 5);
+        this.context.lineTo(x, y - 5);
+        this.context.moveTo(x, y);
+    };
+
+    /**
+     * Transforms a point in base coordinates to context coordinates by applying the transforms the context went through
+     * @param x
+     * @param y
+     * @returns {*|{x, y}|{x: number, y: number}}
+     */
+    transformPoint(x, y) {
+        // transforms a point into context coordinates
+        const invtf = lastElement(this.tf).inverse();
+        return invtf.applyToPoint(x, y);
+    }
+
+    // wrapping around existing methods
     // transformation handling
     save() {
-        this.tf.push(this.tf.last().clone());
+        this.tf.push(lastElement(this.tf).clone());
         this.context.save();
     }
 
@@ -64,26 +97,20 @@ module.exports = class Context2DTracked {
         this.context.restore();
     }
 
-    transformPoint(x, y) {
-        // transforms a point into context coordinates
-        const invtf = this.tf.last().inverse();
-        return invtf.applyToPoint(x, y);
-    }
-
     scale(x, y) {
-        this.tf.last().scale(x, y);
+        lastElement(this.tf).scale(x, y);
     }
 
     translate(x, y) {
-        this.tf.last().translate(x, y);
+        lastElement(this.tf).translate(x, y);
     }
 
     setTransform(a, b, c, d, e, f) {
-        this.tf.last().setTransform(a, b, c, d, e, f);
+        lastElement(this.tf).setTransform(a, b, c, d, e, f);
     }
 
     rotate(angle) {
-        this.tf.last().rotate(angle);
+        lastElement(this.tf).rotate(angle);
     }
 
     movePen(x, y) {
@@ -110,7 +137,7 @@ module.exports = class Context2DTracked {
     lineTo(x, y, debugOptions) {
         if (debugOptions || this.showcontrol) {
             const options = Object.assign(this._getDefaultDebugOptions(), debugOptions);
-            this.drawCurveControl(this._getDebugPoint(x, y), options);
+            this._drawCurveControl(this._getDebugPoint(x, y), options);
         }
         this.context.lineTo(x, y);
         this.movePen(x, y);
@@ -120,7 +147,7 @@ module.exports = class Context2DTracked {
     bezierCurveTo(cpx1, cpy1, cpx2, cpy2, x, y, debugOptions) {
         if (debugOptions || this.showcontrol) {
             const options = Object.assign(this._getDefaultDebugOptions(), debugOptions);
-            this.drawCurveControl(this._getDebugPoint(x, y, cpx1, cpy1, cpx2, cpy2), options);
+            this._drawCurveControl(this._getDebugPoint(x, y, cpx1, cpy1, cpx2, cpy2), options);
         }
         // rest of curve
         this.context.bezierCurveTo(cpx1, cpy1, cpx2, cpy2, x, y);
@@ -130,7 +157,7 @@ module.exports = class Context2DTracked {
     quadraticCurveTo(cpx, cpy, x, y, debugOptions) {
         if (debugOptions || this.showcontrol) {
             const options = Object.assign(this._getDefaultDebugOptions(), debugOptions);
-            this.drawCurveControl(this._getDebugPoint(x, y, cpx, cpy), options);
+            this._drawCurveControl(this._getDebugPoint(x, y, cpx, cpy), options);
         }
         // rest of curve
         this.context.quadraticCurveTo(cpx, cpy, x, y);
@@ -195,23 +222,9 @@ module.exports = class Context2DTracked {
         this.context.clip.apply(this.context, arguments);
     }
 
-    // debugging functions
-    /**
-     * Print crosshairs at the current pen location
-     */
-    trace() {
-        const x = this.penx, y = this.peny;
-        console.log(Math.round(x * 10) / 10 + this.ox, Math.round(y * 10) / 10 + this.oy);
-        // assume path
-        // has begun
-        this.context.moveTo(x - 5, y);
-        this.context.lineTo(x + 5, y);
-        this.context.moveTo(x, y + 5);
-        this.context.lineTo(x, y - 5);
-        this.context.moveTo(x, y);
-    };
 
-    drawCurveControl(point, style) {
+    // new utility methods
+    _drawCurveControl(point, style) {
         this.context.save();
         // assume path
         // has already
@@ -247,7 +260,7 @@ module.exports = class Context2DTracked {
         for (let i = 0; i < ptprint.length; ++i) {
             const p = ptprint[i];
             ptprint[i] = "(" + Math.round(ptprint[i].x * 10) / 10 + ", " +
-                         Math.round(ptprint[i].y * 10) / 10 + ")";
+                Math.round(ptprint[i].y * 10) / 10 + ")";
             this.context.lineWidth = style.point.width;
             // use different colour for destination colour
             if (p === point.p2) {
@@ -287,10 +300,10 @@ module.exports = class Context2DTracked {
         };
         if (typeof cpx1 === "number" && typeof cpy1 === "number") {
             point.cp1 =
-                {
-                    x: cpx1,
-                    y: cpy1
-                };
+            {
+                x: cpx1,
+                y: cpy1
+            };
             if (typeof cpx2 === "number" && typeof cpy2 === "number") {
                 point.cp2 = {
                     x: cpx2,
@@ -307,12 +320,12 @@ module.exports = class Context2DTracked {
                 color: "rgb(200,100,100)",
                 width: 0.5
             },
-            point      : {
-                color           : "rgb(200,50,50)",
+            point: {
+                color: "rgb(200,50,50)",
                 destinationColor: "#000",
-                fill            : "white",
-                width           : 1,
-                radius          : 1
+                fill: "white",
+                width: 1,
+                radius: 1
             },
         };
     }
