@@ -1,7 +1,8 @@
 const Matrix = require("transformation-matrix-js").Matrix;
 
-module.export = class Context2DTracked {
+module.exports = class Context2DTracked {
     constructor(target) {
+        // use: const ctx = new Context2DTracked(canvas.getContext("2d"));
         // target is Canvas Context2D that will be wrapped and tracked
         this.context = target;
 
@@ -33,7 +34,10 @@ module.export = class Context2DTracked {
                 continue;
             }
             if (typeof target[p] === "function") {
-                this[p] = target[p].bind(target);
+                // not providing an override, then just use the default
+                if  (this[p] === "undefined") {
+                    this[p] = target[p].bind(target);
+                }
             }
             // make sure to access only 1 copy of the data
             else {
@@ -312,5 +316,5 @@ module.export = class Context2DTracked {
             },
         };
     }
-}
+};
 
