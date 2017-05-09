@@ -3,6 +3,15 @@ A simple wrapper around CanvasRenderingContext2D in browsers
 for debugging purposes and to retrieve the inverse transform.
 
 ## Usage
+Get by cloning the repository (npm install not recommended).
+### building
+```bash
+npm install
+npm run build
+```
+This creates `dist/Context2DTracked.js` file that you'll need to include
+in a script tag.
+
 See demo in test/index.html
 ### initialization
 ```html
