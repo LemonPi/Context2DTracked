@@ -1,13 +1,16 @@
 {
   "name": "context-2d-tracked",
   "version": "1.0.0",
-  "description": "Context 2D with pen and transform tracking",
-  "main": "src/index.js",
+  "description": "2D drawing context with pen and transform tracking",
+  "main": "dist/Context2DTracked.js",
+  "module": "src/index.js",
   "directories": {
     "test": "test"
   },
   "scripts": {
-    "test": "mocha test/test.js"
+    "test": "mocha test/test.js",
+    "build": "webpack && cp dist/Context2DTracked.js test",
+    "pack": "webpack -p && cp dist/Context2DTracked.js test"
   },
   "repository": {
     "type": "git",
@@ -28,5 +31,12 @@
   "homepage": "https://github.com/LemonPi/Context2DTracked#readme",
   "dependencies": {
     "transformation-matrix-js": "^2.7.1"
+  },
+  "devDependencies": {
+    "webpack": "^2.5.1",
+    "babel-core": "^6.24.1",
+    "babel-loader": "^7.0.0",
+    "babel-preset-es2015": "^6.24.1",
+    "webpack-dev-server": "^2.4.5"
   }
 }

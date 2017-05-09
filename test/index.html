@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Context2DTracked</title>
+    <script src="./Context2DTracked.js"></script>
+</head>
+<body>
+<canvas id="cv" width="600" height="600" style="border:solid black 2px"></canvas>
+<script>
+    console.log("hello world");
+    const cv = document.getElementById("cv");
+
+    // can use just as a global variable in the browser
+    console.log(Context2DTracked);
+    const ctx = new Context2DTracked(cv.getContext("2d"));
+    ctx.beginPath();
+    ctx.trace();
+    ctx.moveTo(5,5);
+    ctx.trace();
+    ctx.lineTo(100,100);
+    ctx.trace();
+    ctx.stroke();
+</script>
+</body>
+</html>
