@@ -59,7 +59,7 @@ module.exports = class Context2DTracked {
 
     // new methods
     /**
-     * Print crosshairs at the current pen location
+     * Print crosshairs at the current pen location and return their locations
      */
     trace() {
         const x = this.penx, y = this.peny;
@@ -71,6 +71,7 @@ module.exports = class Context2DTracked {
         this.context.moveTo(x, y + 5);
         this.context.lineTo(x, y - 5);
         this.context.moveTo(x, y);
+        return {x,y};
     };
 
     /**
