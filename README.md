@@ -44,7 +44,7 @@ Only useful is the source is ultimately used in the browser since that's the onl
 place where canvas and rendering contexts exist. This would be the case if the
 code's passed through `browserify` or `webpack`, for example.
 ```javascript
-const Context2DTracked = require('Context2DTracked');
+const Context2DTracked = require('context-2d-tracked');
 ```
 
 
