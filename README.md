@@ -3,17 +3,24 @@ A simple wrapper around CanvasRenderingContext2D in browsers
 for debugging purposes and to retrieve the inverse transform.
 
 ## Usage
-Get by cloning the repository (npm install not recommended).
-### building
+Get by cloning the repository, or `npm install context-2d-tracked` if using in Node context.
+
+### building from source
 ```bash
 npm install
 npm run build
 ```
-This creates `dist/Context2DTracked.js` file that you'll need to include
-in a script tag.
 
-See demo in test/index.html
-### initialization
+### demo
+```bash
+npm install
+npm test
+```
+
+### include (browser)
+
+Include `dist/Context2DTracked.js` in a script tag and use `Context2DTracked` as a global variable.
+
 ```html
 <html>
 <head>
@@ -31,6 +38,15 @@ const ctx = new Context2DTracked(cv.getContext("2d"));
 </body>
 </html>
 ```
+
+### include (CommonJS)
+Only useful is the source is ultimately used in the browser since that's the only
+place where canvas and rendering contexts exist. This would be the case if the
+code's passed through `browserify` or `webpack`, for example.
+```javascript
+const Context2DTracked = require('Context2DTracked');
+```
+
 
 ### trace
 Print a crosshair where the pen is currently at and return the coordinates.

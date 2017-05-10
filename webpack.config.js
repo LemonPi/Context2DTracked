@@ -10,11 +10,13 @@ module.exports = {
     output: {
         filename: 'Context2DTracked.js',
         path: path.resolve(__dirname, 'dist'),
+        publicPath: '/',
         library: 'Context2DTracked',
         libraryTarget: 'umd',
     },
     devServer: {
-        contentBase: path.resolve(__dirname, './src'),  // New
+        publicPath: "/dist/",
+        contentBase: path.resolve(__dirname, 'test'),  // New
     },
     module: {
         rules: [
@@ -27,5 +29,5 @@ module.exports = {
                 }],
             },
         ]
-    }
+    },
 };
