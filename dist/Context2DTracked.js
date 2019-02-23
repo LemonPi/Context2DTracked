@@ -182,6 +182,12 @@ module.exports = function () {
             var invtf = lastElement(this.tf).inverse();
             return invtf.applyToPoint(x, y);
         }
+    }, {
+        key: "transformCoordinate",
+        value: function transformCoordinate(x, y) {
+            // transform context coordinates into a point
+            return lastElement(this.tf).applyToPoint(x, y);
+        }
 
         // wrapping around existing methods
         // transformation handling
