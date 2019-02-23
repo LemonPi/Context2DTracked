@@ -24,6 +24,7 @@
     // can use just as a global variable in the browser
     var ctx = new Context2DTracked(cv.getContext("2d"));
 
+
     function drawBaseCurve(debugInfo) {
         // after scaling, we need to clear using context dimensions rather than canvas dimensions
         var canvasDimensions = ctx.transformPoint(cv.width, cv.height);
@@ -51,6 +52,9 @@
         console.log("canvas coordinates:  ", x, y);
         var pt = ctx.transformPoint(x, y);
         console.log("context coordinates: ", pt.x, pt.y);
+        var orig = ctx.transformCoordinate(pt.x, pt.y);
+        console.log("canvas coordinates (transformed back): ", orig.x, orig.y);
+
         console.log("-------------");
 
         ctx.beginPath();

@@ -86,6 +86,11 @@ module.exports = class Context2DTracked {
         return invtf.applyToPoint(x, y);
     }
 
+    transformCoordinate(x, y) {
+        // transform context coordinates into a point
+        return lastElement(this.tf).applyToPoint(x, y);
+    }
+
     // wrapping around existing methods
     // transformation handling
     save() {
