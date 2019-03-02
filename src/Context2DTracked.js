@@ -4,6 +4,15 @@ function lastElement(array) {
     return array[array.length - 1];
 }
 
+function using(start, close, execute) {
+    try {
+        start.call(this);
+        return execute.call(this);
+    } finally {
+        close.call(this);
+    }
+}
+
 module.exports = class Context2DTracked {
     constructor(target) {
         // use: const ctx = new Context2DTracked(canvas.getContext("2d"));
@@ -64,6 +73,18 @@ module.exports = class Context2DTracked {
     cf() {
         return lastElement(this.tf);
     }
+
+    usingScaledLineWidth(execute) {
+        const tmp = this.context.lineWidth;
+        const start = () => {
+            this.context.lineWidth *= Math.abs(this.cf().a);
+        };
+        const close = () => {
+            this.context.lineWidth = tmp;
+        };
+        return using.call(this, start, close, execute);
+    }
+
 
     /**
      * Print crosshairs at the current pen location and return their locations
@@ -156,10 +177,9 @@ module.exports = class Context2DTracked {
     }
 
     strokeRect(x, y, width, height) {
-        const tmp = this.context.lineWidth;
-        this.context.lineWidth *= Math.abs(this.cf().a);
-        this._rect(...arguments, this.context.strokeRect);
-        this.context.lineWidth = tmp;
+        this.usingScaledLineWidth(()=>{
+            this._rect(...arguments, this.context.strokeRect);
+        });
     }
 
     rect(x, y, width, height) {
@@ -168,15 +188,14 @@ module.exports = class Context2DTracked {
 
     fillText(text, x, y, maxWidth) {
         const t = this.cf().applyToPoint(x, y);
-        const tmp = this.context.lineWidth;
-        this.context.lineWidth *= Math.abs(this.cf().a);
         this.context.fillText(text, t.x, t.y, maxWidth);
-        this.context.lineWidth = tmp;
     }
 
     strokeText(text, x, y, maxWidth) {
         const t = this.cf().applyToPoint(x, y);
-        this.context.strokeText(text, t.x, t.y, maxWidth);
+        this.usingScaledLineWidth(()=>{
+            this.context.strokeText(text, t.x, t.y, maxWidth);
+        });
     }
 
     createLinearGradient(x0, y0, x1, y1) {
@@ -270,10 +289,9 @@ module.exports = class Context2DTracked {
     stroke() {
         // have to manually do this because we're not scaling context
         if (this.context.strokeStyle !== "rgba(0, 0, 0, 0)") {
-            const tmp = this.context.lineWidth;
-            this.context.lineWidth *= Math.abs(this.cf().a);
-            this.context.stroke();
-            this.context.lineWidth = tmp;
+            this.usingScaledLineWidth(()=>{
+                this.context.stroke();
+            });
         }
     }
 
