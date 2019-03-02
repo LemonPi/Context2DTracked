@@ -25,14 +25,48 @@
     var ctx = new Context2DTracked(cv.getContext("2d"));
 
 
+    var imageCanvas = document.createElement("canvas");
+    var image = new Image();
+    image.onload = () => {
+        imageCanvas.width = image.width;
+        imageCanvas.height = image.height;
+
+        var imageCtx = imageCanvas.getContext("2d");
+        imageCtx.drawImage(image,
+            0,
+            0,
+            image.width,
+            image.height,
+            0,
+            0,
+            imageCanvas.width,
+            imageCanvas.height);
+
+        ctx.fillStyle = imageCtx.createPattern(imageCanvas, "repeat");
+        drawBaseCurve();
+    };
+    image.src = "tesellation.jpg";
+
     function drawBaseCurve(debugInfo) {
         // after scaling, we need to clear using context dimensions rather than canvas dimensions
         var canvasDimensions = ctx.transformPoint(cv.width, cv.height);
         ctx.clearRect(0, 0, canvasDimensions.x, canvasDimensions.y);
+
+
         ctx.beginPath();
         ctx.moveTo(20, 25);
         ctx.bezierCurveTo(100, 200, 200, 100, 350, 400, debugInfo);
         ctx.stroke();
+
+        // test out pattern drawing and preserving resolution
+        ctx.beginPath();
+        ctx.moveTo(20, 25);
+        ctx.lineTo(70, 25);
+        ctx.quadraticCurveTo(100, 50, 70, 75);
+        ctx.bezierCurveTo(60, 60, 40, 100, 20, 75);
+        ctx.lineTo(20, 25);
+        ctx.stroke();
+        ctx.fill();
     }
 
     cv.addEventListener("click", function (e) {
@@ -93,7 +127,8 @@
                 "Click on the canvas and you'll draw a point after transforming from page coordinates";
     });
 
-    drawBaseCurve();
+
+
 
 </script>
 </body>
