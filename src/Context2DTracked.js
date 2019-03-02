@@ -10,7 +10,7 @@ module.exports = class Context2DTracked {
         // target is Canvas Context2D that will be wrapped and tracked
         this.context = target;
 
-        this.tf = [new Matrix(target)];  // keep track of transformations
+        this.tf = [new Matrix()];  // keep track of transformations
 
         // tracking where the current pen is on the canvas
         this.penx = 0;
@@ -59,6 +59,13 @@ module.exports = class Context2DTracked {
 
     // new methods
     /**
+     * Current transform
+     */
+    cf() {
+        return lastElement(this.tf);
+    }
+
+    /**
      * Print crosshairs at the current pen location and return their locations
      */
     trace() {
@@ -71,7 +78,10 @@ module.exports = class Context2DTracked {
         this.context.moveTo(x, y + 5);
         this.context.lineTo(x, y - 5);
         this.context.moveTo(x, y);
-        return {x,y};
+        return {
+            x,
+            y
+        };
     };
 
     /**
@@ -120,13 +130,68 @@ module.exports = class Context2DTracked {
     }
 
     movePen(x, y) {
+        const t = this.cf().applyToPoint(x, y);
         if (this.justBegun) {
             this.justBegun = false;
-            this.bpenx = x;
-            this.bpeny = y;
+            this.bpenx = t.x;
+            this.bpeny = t.y;
         }
-        this.penx = x;
-        this.peny = y;
+        this.penx = t.x;
+        this.peny = t.y;
+    }
+
+    // methods that have positions so need us to apply the points...
+    _rect(x, y, width, height, op) {
+        const t = this.cf().applyToPoint(x, y);
+        const s = this.cf().applyToPoint(width, height);
+        op.call(this.context, t.x, t.y, s.x, s.y);
+    }
+
+    clearRect(x, y, width, height) {
+        this._rect(...arguments, this.context.clearRect);
+    }
+
+    fillRect(x, y, width, height) {
+        this._rect(...arguments, this.context.fillRect);
+    }
+
+    strokeRect(x, y, width, height) {
+        const tmp = this.context.lineWidth;
+        this.context.lineWidth *= Math.abs(this.cf().a);
+        this._rect(...arguments, this.context.strokeRect);
+        this.context.lineWidth = tmp;
+    }
+
+    rect(x, y, width, height) {
+        this._rect(...arguments, this.context.rect);
+    }
+
+    fillText(text, x, y, maxWidth) {
+        const t = this.cf().applyToPoint(x, y);
+        const tmp = this.context.lineWidth;
+        this.context.lineWidth *= Math.abs(this.cf().a);
+        this.context.fillText(text, t.x, t.y, maxWidth);
+        this.context.lineWidth = tmp;
+    }
+
+    strokeText(text, x, y, maxWidth) {
+        const t = this.cf().applyToPoint(x, y);
+        this.context.strokeText(text, t.x, t.y, maxWidth);
+    }
+
+    createLinearGradient(x0, y0, x1, y1) {
+        const t0 = this.cf().applyToPoint(x0, y0);
+        const t1 = this.cf().applyToPoint(x1, y1);
+        return this.context.createLinearGradient(t0.x, t0.y, t1.x, t1.y);
+    }
+
+    createRadialGradient(x0, y0, r0, x1, y1, r1) {
+        const t0 = this.cf().applyToPoint(x0, y0);
+        const t1 = this.cf().applyToPoint(x1, y1);
+        // TODO problematic radius because we can't transform differently for x and y
+        const tr0 = this.cf().a * r0;
+        const tr1 = this.cf().a * r1;
+        return this.context.createRadialGradient(t0.x, t0.y, tr0, t1.x, t1.y, tr1);
     }
 
     // methods that change pen position will be overriden
@@ -137,48 +202,60 @@ module.exports = class Context2DTracked {
 
     moveTo(x, y) {
         this.movePen(x, y);
-        this.context.moveTo(x, y);
+        const t = this.cf().applyToPoint(x, y);
+        this.context.moveTo(t.x, t.y);
     }
 
     lineTo(x, y, debugOptions) {
+        const t = this.cf().applyToPoint(x, y);
         if (debugOptions || this.showcontrol) {
             const options = Object.assign(this._getDefaultDebugOptions(), debugOptions);
-            this._drawCurveControl(this._getDebugPoint(x, y), options);
+            this._drawCurveControl(this._getDebugPoint(t.x, t.y), options);
         }
-        this.context.lineTo(x, y);
+        this.context.lineTo(t.x, t.y);
         this.movePen(x, y);
     }
 
 
     bezierCurveTo(cpx1, cpy1, cpx2, cpy2, x, y, debugOptions) {
+        const t = this.cf().applyToPoint(x, y);
+        const tcp1 = this.cf().applyToPoint(cpx1, cpy1);
+        const tcp2 = this.cf().applyToPoint(cpx2, cpy2);
         if (debugOptions || this.showcontrol) {
             const options = Object.assign(this._getDefaultDebugOptions(), debugOptions);
-            this._drawCurveControl(this._getDebugPoint(x, y, cpx1, cpy1, cpx2, cpy2), options);
+            this._drawCurveControl(this._getDebugPoint(t.x, t.y, tcp1.x, tcp1.y, tcp2.x, tcp2.y),
+                options);
         }
         // rest of curve
-        this.context.bezierCurveTo(cpx1, cpy1, cpx2, cpy2, x, y);
+        this.context.bezierCurveTo(tcp1.x, tcp1.y, tcp2.x, tcp2.y, t.x, t.y);
         this.movePen(x, y);
     }
 
     quadraticCurveTo(cpx, cpy, x, y, debugOptions) {
+        const t = this.cf().applyToPoint(x, y);
+        const tcp = this.cf().applyToPoint(cpx, cpy);
         if (debugOptions || this.showcontrol) {
             const options = Object.assign(this._getDefaultDebugOptions(), debugOptions);
-            this._drawCurveControl(this._getDebugPoint(x, y, cpx, cpy), options);
+            this._drawCurveControl(this._getDebugPoint(t.x, t.y, tcp.x, tcp.y), options);
         }
         // rest of curve
-        this.context.quadraticCurveTo(cpx, cpy, x, y);
+        this.context.quadraticCurveTo(tcp.x, tcp.y, t.x, t.y);
         this.movePen(x, y);
     }
 
     arc(x, y, radius, startAngle, endAngle, anticlockwise) {
+        const t = this.cf().applyToPoint(x, y);
+        // TODO problematic radius because we can't transform differently for x and y
+        // we'll just use the x scale
+        const r = this.cf().a * radius;
         // first move to starting location
         // using a bit of trig
-        const sx = x + Math.cos(startAngle) * radius, sy = y + Math.sin(startAngle) * radius;
+        const sx = t.x + Math.cos(startAngle) * r, sy = t.y + Math.sin(startAngle) * r;
         this.movePen(sx, sy);
         // draw arc
-        this.context.arc(x, y, radius, startAngle, endAngle, anticlockwise);
+        this.context.arc(t.x, t.y, r, startAngle, endAngle, anticlockwise);
 
-        const ex = x + Math.cos(endAngle) * radius, ey = y + Math.sin(endAngle) * radius;
+        const ex = t.x + Math.cos(endAngle) * r, ey = t.y + Math.sin(endAngle) * r;
         this.movePen(ex, ey);
         // bug? fills to the start of the
         // path, but the continuation for
@@ -188,30 +265,15 @@ module.exports = class Context2DTracked {
         this.bpeny = ey;
     }
 
-    ellipse(x, y, rx, ry, rot, sa, ea, anticlockwise) {
-        if (this.context.ellipse) {
-            this.context.ellipse.apply(this.context, arguments);
-        } else {
-            // polyfill
-            this.save();
-            this.translate(x, y);
-            this.rotate(rot);
-            this.scale(rx, ry);
-            this.arc(0, 0, 1, sa, ea, anticlockwise);
-            this.restore();
-        }
-    }
-
-    arcTo(x1, y1, x2, y2, radius) {
-        // Don't use this please; no
-        // idea how to calculate the
-        // ending location...
-        this.context.arcTo(x1, y1, x2, y2, radius);
-    }
+    // UNSUPPORTED functions (behaviour will be unexpected): ellipse, arcTo,
 
     stroke() {
+        // have to manually do this because we're not scaling context
         if (this.context.strokeStyle !== "rgba(0, 0, 0, 0)") {
+            const tmp = this.context.lineWidth;
+            this.context.lineWidth *= Math.abs(this.cf().a);
             this.context.stroke();
+            this.context.lineWidth = tmp;
         }
     }
 
@@ -266,7 +328,7 @@ module.exports = class Context2DTracked {
         for (let i = 0; i < ptprint.length; ++i) {
             const p = ptprint[i];
             ptprint[i] = "(" + Math.round(ptprint[i].x * 10) / 10 + ", " +
-                Math.round(ptprint[i].y * 10) / 10 + ")";
+                         Math.round(ptprint[i].y * 10) / 10 + ")";
             this.context.lineWidth = style.point.width;
             // use different colour for destination colour
             if (p === point.p2) {
@@ -306,10 +368,10 @@ module.exports = class Context2DTracked {
         };
         if (typeof cpx1 === "number" && typeof cpy1 === "number") {
             point.cp1 =
-            {
-                x: cpx1,
-                y: cpy1
-            };
+                {
+                    x: cpx1,
+                    y: cpy1
+                };
             if (typeof cpx2 === "number" && typeof cpy2 === "number") {
                 point.cp2 = {
                     x: cpx2,
@@ -326,12 +388,12 @@ module.exports = class Context2DTracked {
                 color: "rgb(200,100,100)",
                 width: 0.5
             },
-            point: {
-                color: "rgb(200,50,50)",
+            point      : {
+                color           : "rgb(200,50,50)",
                 destinationColor: "#000",
-                fill: "white",
-                width: 1,
-                radius: 1
+                fill            : "white",
+                width           : 1,
+                radius          : 1
             },
         };
     }
