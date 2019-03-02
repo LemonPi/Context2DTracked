@@ -2,6 +2,16 @@
 A simple wrapper around CanvasRenderingContext2D in browsers
 for debugging purposes and to retrieve the inverse transform.
 
+An additional feature is that we manually scale inputs rather than have
+the underlying context do it. This has the advantage of **preserving pattern
+resolution** (with ctx.createPattern resolution normally degrades if you scale up the rendering context).
+This means we cannot support unequal scaling for x and y on radial methods (arc and createRadialGradient).
+In those cases we take the x scaling.
+
+Operations not entirely supported:
+- arcTo (will not be tracked, but will work)
+- ellipse
+
 ## Usage
 Get by cloning the repository, or `npm install context-2d-tracked` if using in Node context.
 

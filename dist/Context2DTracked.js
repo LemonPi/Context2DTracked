@@ -93,6 +93,15 @@ function lastElement(array) {
     return array[array.length - 1];
 }
 
+function using(start, close, execute) {
+    try {
+        start.call(this);
+        return execute.call(this);
+    } finally {
+        close.call(this);
+    }
+}
+
 module.exports = function () {
     function Context2DTracked(target) {
         _classCallCheck(this, Context2DTracked);
@@ -101,7 +110,7 @@ module.exports = function () {
         // target is Canvas Context2D that will be wrapped and tracked
         this.context = target;
 
-        this.tf = [new Matrix(target)]; // keep track of transformations
+        this.tf = [new Matrix()]; // keep track of transformations
 
         // tracking where the current pen is on the canvas
         this.penx = 0;
@@ -148,11 +157,35 @@ module.exports = function () {
 
     // new methods
     /**
-     * Print crosshairs at the current pen location and return their locations
+     * Current transform
      */
 
 
     _createClass(Context2DTracked, [{
+        key: "cf",
+        value: function cf() {
+            return lastElement(this.tf);
+        }
+    }, {
+        key: "usingScaledLineWidth",
+        value: function usingScaledLineWidth(execute) {
+            var _this = this;
+
+            var tmp = this.context.lineWidth;
+            var start = function start() {
+                _this.context.lineWidth *= Math.abs(_this.cf().a);
+            };
+            var close = function close() {
+                _this.context.lineWidth = tmp;
+            };
+            return using.call(this, start, close, execute);
+        }
+
+        /**
+         * Print crosshairs at the current pen location and return their locations
+         */
+
+    }, {
         key: "trace",
         value: function trace() {
             var x = this.penx,
@@ -165,7 +198,10 @@ module.exports = function () {
             this.context.moveTo(x, y + 5);
             this.context.lineTo(x, y - 5);
             this.context.moveTo(x, y);
-            return { x: x, y: y };
+            return {
+                x: x,
+                y: y
+            };
         }
     }, {
         key: "transformPoint",
@@ -227,13 +263,82 @@ module.exports = function () {
     }, {
         key: "movePen",
         value: function movePen(x, y) {
+            var t = this.cf().applyToPoint(x, y);
             if (this.justBegun) {
                 this.justBegun = false;
-                this.bpenx = x;
-                this.bpeny = y;
+                this.bpenx = t.x;
+                this.bpeny = t.y;
             }
-            this.penx = x;
-            this.peny = y;
+            this.penx = t.x;
+            this.peny = t.y;
+        }
+
+        // methods that have positions so need us to apply the points...
+
+    }, {
+        key: "_rect",
+        value: function _rect(x, y, width, height, op) {
+            var t = this.cf().applyToPoint(x, y);
+            var s = this.cf().applyToPoint(width, height);
+            op.call(this.context, t.x, t.y, s.x, s.y);
+        }
+    }, {
+        key: "clearRect",
+        value: function clearRect(x, y, width, height) {
+            this._rect.apply(this, Array.prototype.slice.call(arguments).concat([this.context.clearRect]));
+        }
+    }, {
+        key: "fillRect",
+        value: function fillRect(x, y, width, height) {
+            this._rect.apply(this, Array.prototype.slice.call(arguments).concat([this.context.fillRect]));
+        }
+    }, {
+        key: "strokeRect",
+        value: function strokeRect(x, y, width, height) {
+            var _this2 = this,
+                _arguments = arguments;
+
+            this.usingScaledLineWidth(function () {
+                _this2._rect.apply(_this2, Array.prototype.slice.call(_arguments).concat([_this2.context.strokeRect]));
+            });
+        }
+    }, {
+        key: "rect",
+        value: function rect(x, y, width, height) {
+            this._rect.apply(this, Array.prototype.slice.call(arguments).concat([this.context.rect]));
+        }
+    }, {
+        key: "fillText",
+        value: function fillText(text, x, y, maxWidth) {
+            var t = this.cf().applyToPoint(x, y);
+            this.context.fillText(text, t.x, t.y, maxWidth);
+        }
+    }, {
+        key: "strokeText",
+        value: function strokeText(text, x, y, maxWidth) {
+            var _this3 = this;
+
+            var t = this.cf().applyToPoint(x, y);
+            this.usingScaledLineWidth(function () {
+                _this3.context.strokeText(text, t.x, t.y, maxWidth);
+            });
+        }
+    }, {
+        key: "createLinearGradient",
+        value: function createLinearGradient(x0, y0, x1, y1) {
+            var t0 = this.cf().applyToPoint(x0, y0);
+            var t1 = this.cf().applyToPoint(x1, y1);
+            return this.context.createLinearGradient(t0.x, t0.y, t1.x, t1.y);
+        }
+    }, {
+        key: "createRadialGradient",
+        value: function createRadialGradient(x0, y0, r0, x1, y1, r1) {
+            var t0 = this.cf().applyToPoint(x0, y0);
+            var t1 = this.cf().applyToPoint(x1, y1);
+            // TODO problematic radius because we can't transform differently for x and y
+            var tr0 = this.cf().a * r0;
+            var tr1 = this.cf().a * r1;
+            return this.context.createRadialGradient(t0.x, t0.y, tr0, t1.x, t1.y, tr1);
         }
 
         // methods that change pen position will be overriden
@@ -248,53 +353,64 @@ module.exports = function () {
         key: "moveTo",
         value: function moveTo(x, y) {
             this.movePen(x, y);
-            this.context.moveTo(x, y);
+            var t = this.cf().applyToPoint(x, y);
+            this.context.moveTo(t.x, t.y);
         }
     }, {
         key: "lineTo",
         value: function lineTo(x, y, debugOptions) {
+            var t = this.cf().applyToPoint(x, y);
             if (debugOptions || this.showcontrol) {
                 var options = Object.assign(this._getDefaultDebugOptions(), debugOptions);
-                this._drawCurveControl(this._getDebugPoint(x, y), options);
+                this._drawCurveControl(this._getDebugPoint(t.x, t.y), options);
             }
-            this.context.lineTo(x, y);
+            this.context.lineTo(t.x, t.y);
             this.movePen(x, y);
         }
     }, {
         key: "bezierCurveTo",
         value: function bezierCurveTo(cpx1, cpy1, cpx2, cpy2, x, y, debugOptions) {
+            var t = this.cf().applyToPoint(x, y);
+            var tcp1 = this.cf().applyToPoint(cpx1, cpy1);
+            var tcp2 = this.cf().applyToPoint(cpx2, cpy2);
             if (debugOptions || this.showcontrol) {
                 var options = Object.assign(this._getDefaultDebugOptions(), debugOptions);
-                this._drawCurveControl(this._getDebugPoint(x, y, cpx1, cpy1, cpx2, cpy2), options);
+                this._drawCurveControl(this._getDebugPoint(t.x, t.y, tcp1.x, tcp1.y, tcp2.x, tcp2.y), options);
             }
             // rest of curve
-            this.context.bezierCurveTo(cpx1, cpy1, cpx2, cpy2, x, y);
+            this.context.bezierCurveTo(tcp1.x, tcp1.y, tcp2.x, tcp2.y, t.x, t.y);
             this.movePen(x, y);
         }
     }, {
         key: "quadraticCurveTo",
         value: function quadraticCurveTo(cpx, cpy, x, y, debugOptions) {
+            var t = this.cf().applyToPoint(x, y);
+            var tcp = this.cf().applyToPoint(cpx, cpy);
             if (debugOptions || this.showcontrol) {
                 var options = Object.assign(this._getDefaultDebugOptions(), debugOptions);
-                this._drawCurveControl(this._getDebugPoint(x, y, cpx, cpy), options);
+                this._drawCurveControl(this._getDebugPoint(t.x, t.y, tcp.x, tcp.y), options);
             }
             // rest of curve
-            this.context.quadraticCurveTo(cpx, cpy, x, y);
+            this.context.quadraticCurveTo(tcp.x, tcp.y, t.x, t.y);
             this.movePen(x, y);
         }
     }, {
         key: "arc",
         value: function arc(x, y, radius, startAngle, endAngle, anticlockwise) {
+            var t = this.cf().applyToPoint(x, y);
+            // TODO problematic radius because we can't transform differently for x and y
+            // we'll just use the x scale
+            var r = this.cf().a * radius;
             // first move to starting location
             // using a bit of trig
-            var sx = x + Math.cos(startAngle) * radius,
-                sy = y + Math.sin(startAngle) * radius;
+            var sx = t.x + Math.cos(startAngle) * r,
+                sy = t.y + Math.sin(startAngle) * r;
             this.movePen(sx, sy);
             // draw arc
-            this.context.arc(x, y, radius, startAngle, endAngle, anticlockwise);
+            this.context.arc(t.x, t.y, r, startAngle, endAngle, anticlockwise);
 
-            var ex = x + Math.cos(endAngle) * radius,
-                ey = y + Math.sin(endAngle) * radius;
+            var ex = t.x + Math.cos(endAngle) * r,
+                ey = t.y + Math.sin(endAngle) * r;
             this.movePen(ex, ey);
             // bug? fills to the start of the
             // path, but the continuation for
@@ -303,34 +419,19 @@ module.exports = function () {
             this.bpenx = ex;
             this.bpeny = ey;
         }
-    }, {
-        key: "ellipse",
-        value: function ellipse(x, y, rx, ry, rot, sa, ea, anticlockwise) {
-            if (this.context.ellipse) {
-                this.context.ellipse.apply(this.context, arguments);
-            } else {
-                // polyfill
-                this.save();
-                this.translate(x, y);
-                this.rotate(rot);
-                this.scale(rx, ry);
-                this.arc(0, 0, 1, sa, ea, anticlockwise);
-                this.restore();
-            }
-        }
-    }, {
-        key: "arcTo",
-        value: function arcTo(x1, y1, x2, y2, radius) {
-            // Don't use this please; no
-            // idea how to calculate the
-            // ending location...
-            this.context.arcTo(x1, y1, x2, y2, radius);
-        }
+
+        // UNSUPPORTED functions (behaviour will be unexpected): ellipse, arcTo,
+
     }, {
         key: "stroke",
         value: function stroke() {
+            var _this4 = this;
+
+            // have to manually do this because we're not scaling context
             if (this.context.strokeStyle !== "rgba(0, 0, 0, 0)") {
-                this.context.stroke();
+                this.usingScaledLineWidth(function () {
+                    _this4.context.stroke();
+                });
             }
         }
 
