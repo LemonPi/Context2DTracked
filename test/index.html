@@ -24,6 +24,13 @@
     // can use just as a global variable in the browser
     var ctx = new Context2DTracked(cv.getContext("2d"));
 
+    var textCanvas = document.createElement("canvas");
+    textCanvas.width = 100;
+    textCanvas.height = 24;
+    var textCtx = textCanvas.getContext("2d");
+    textCtx.font = "24px consolas";
+    textCtx.fillText("canvas", 0, textCanvas.height);
+
     var imageCanvas = document.createElement("canvas");
     var image = new Image();
     image.onload = () => {
@@ -49,7 +56,6 @@
     image.src = "tesellation.jpg";
 
 
-
     function drawBaseCurve(debugInfo) {
         // after scaling, we need to clear using context dimensions rather than canvas dimensions
         var canvasDimensions = ctx.transformPoint(cv.width, cv.height);
@@ -72,13 +78,14 @@
         ctx.fill();
 
         // test rect stroke
-        ctx.strokeRect(200,200, 50, 50);
+        ctx.strokeRect(200, 200, 50, 50);
 
         // test text stroke
         ctx.strokeText("test", 225, 225);
 
         // test image
-        ctx.drawImage(imageCanvas, 0, 0, image.width, image.height, 100, 100, 50, 50);
+        ctx.drawImage(imageCanvas, 0, 0, image.width, image.height, 100, 150, 50, 50);
+        ctx.drawImage(textCanvas, 150, 350, 200, 50);
     }
 
     cv.addEventListener("click", function (e) {
@@ -127,19 +134,18 @@
 
     document.getElementById("showControl").addEventListener("click", function () {
         drawBaseCurve(true);
-        explanation.textContent = "Bezier curves and quadratic curves can have their control points shown " +
-                "by giving a control options object as an argument after the coordinates.\n" +
-                "A non-false value will use the default styling options.";
+        explanation.textContent =
+            "Bezier curves and quadratic curves can have their control points shown " +
+            "by giving a control options object as an argument after the coordinates.\n" +
+            "A non-false value will use the default styling options.";
     });
 
     document.getElementById("transformPoints").addEventListener("click", function () {
         explanation.textContent = "The rendering context can be transformed (rotated, scaled).\n" +
-                "User interaction with the canvas will return page coordinates, which need\n" +
-                "to be transformed into canvas coordinates.\n" +
-                "Click on the canvas and you'll draw a point after transforming from page coordinates";
+                                  "User interaction with the canvas will return page coordinates, which need\n" +
+                                  "to be transformed into canvas coordinates.\n" +
+                                  "Click on the canvas and you'll draw a point after transforming from page coordinates";
     });
-
-
 
 
 </script>

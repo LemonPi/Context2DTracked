@@ -313,7 +313,6 @@ module.exports = class Context2DTracked {
         }
         const d = this.cf().applyToPoint(dx, dy);
         const ddim = this.cf().applyToPoint(dWidth, dHeight);
-        console.log(ddim);
         this.context.drawImage(image, s.x, s.y, sdim.x, sdim.y, d.x, d.y, ddim.x, ddim.y);
     }
 
