@@ -300,6 +300,34 @@ module.exports = class Context2DTracked {
         this.bpeny = ey;
     }
 
+    drawImage(image, sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight) {
+        const s = this.cf().applyToPoint(sx, sy);
+        if (sWidth === undefined) {
+            this.context.drawImage(image, s.x, s.y);
+            return;
+        }
+        const sdim = this.cf().applyToPoint(sWidth, sHeight);
+        if (dx === undefined) {
+            this.context.drawImage(image, s.x, s.y, sdim.x, sdim.y);
+            return;
+        }
+        const d = this.cf().applyToPoint(dx, dy);
+        const ddim = this.cf().applyToPoint(dWidth, dHeight);
+        console.log(ddim);
+        this.context.drawImage(image, s.x, s.y, sdim.x, sdim.y, d.x, d.y, ddim.x, ddim.y);
+    }
+
+    putImageData(imageData, dx, dy, dirtyX, dirtyY, dirtyWidth, dirtyHeight) {
+        const d = this.cf().applyToPoint(dx, dy);
+        if (dirtyX === undefined) {
+            this.context.putImageData(imageData, d.x, d.y);
+            return;
+        }
+        const dirty = this.cf().applyToPoint(dirtyX, dirtyY);
+        const dim = this.cf().applyToPoint(dirtyWidth, dirtyHeight);
+        this.context.putImageData(imageData, d.x, d.y, dirty.x, dirty.y, dim.x, dim.y);
+    }
+
     // UNSUPPORTED functions (behaviour will be unexpected): ellipse, arcTo,
 
     stroke() {

@@ -24,7 +24,6 @@
     // can use just as a global variable in the browser
     var ctx = new Context2DTracked(cv.getContext("2d"));
 
-
     var imageCanvas = document.createElement("canvas");
     var image = new Image();
     image.onload = () => {
@@ -42,10 +41,14 @@
             imageCanvas.width,
             imageCanvas.height);
 
+        // prepare pattern test
         ctx.fillStyle = imageCtx.createPattern(imageCanvas, "repeat");
+
         drawBaseCurve();
     };
     image.src = "tesellation.jpg";
+
+
 
     function drawBaseCurve(debugInfo) {
         // after scaling, we need to clear using context dimensions rather than canvas dimensions
@@ -68,9 +71,14 @@
         ctx.stroke();
         ctx.fill();
 
+        // test rect stroke
         ctx.strokeRect(200,200, 50, 50);
 
+        // test text stroke
         ctx.strokeText("test", 225, 225);
+
+        // test image
+        ctx.drawImage(imageCanvas, 0, 0, image.width, image.height, 100, 100, 50, 50);
     }
 
     cv.addEventListener("click", function (e) {
