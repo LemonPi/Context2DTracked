@@ -180,6 +180,22 @@ module.exports = function () {
             };
             return using.call(this, start, close, execute);
         }
+    }, {
+        key: "usingScaledFontSize",
+        value: function usingScaledFontSize(execute) {
+            var _this2 = this;
+
+            var tmp = this.context.font;
+            var info = tmp.split(' ');
+            var newSize = Math.round(parseInt(info[0]) * Math.abs(this.cf().a));
+            var start = function start() {
+                _this2.context.font = newSize + 'px ' + info[info.length - 1];
+            };
+            var close = function close() {
+                _this2.context.font = tmp;
+            };
+            return using.call(this, start, close, execute);
+        }
 
         /**
          * Print crosshairs at the current pen location and return their locations
@@ -295,11 +311,11 @@ module.exports = function () {
     }, {
         key: "strokeRect",
         value: function strokeRect(x, y, width, height) {
-            var _this2 = this,
+            var _this3 = this,
                 _arguments = arguments;
 
             this.usingScaledLineWidth(function () {
-                _this2._rect.apply(_this2, Array.prototype.slice.call(_arguments).concat([_this2.context.strokeRect]));
+                _this3._rect.apply(_this3, Array.prototype.slice.call(_arguments).concat([_this3.context.strokeRect]));
             });
         }
     }, {
@@ -310,17 +326,23 @@ module.exports = function () {
     }, {
         key: "fillText",
         value: function fillText(text, x, y, maxWidth) {
+            var _this4 = this;
+
             var t = this.cf().applyToPoint(x, y);
-            this.context.fillText(text, t.x, t.y, maxWidth);
+            this.usingScaledFontSize(function () {
+                _this4.context.fillText(text, t.x, t.y, maxWidth);
+            });
         }
     }, {
         key: "strokeText",
         value: function strokeText(text, x, y, maxWidth) {
-            var _this3 = this;
+            var _this5 = this;
 
             var t = this.cf().applyToPoint(x, y);
             this.usingScaledLineWidth(function () {
-                _this3.context.strokeText(text, t.x, t.y, maxWidth);
+                _this5.usingScaledFontSize(function () {
+                    _this5.context.strokeText(text, t.x, t.y, maxWidth);
+                });
             });
         }
     }, {
@@ -425,12 +447,12 @@ module.exports = function () {
     }, {
         key: "stroke",
         value: function stroke() {
-            var _this4 = this;
+            var _this6 = this;
 
             // have to manually do this because we're not scaling context
             if (this.context.strokeStyle !== "rgba(0, 0, 0, 0)") {
                 this.usingScaledLineWidth(function () {
-                    _this4.context.stroke();
+                    _this6.context.stroke();
                 });
             }
         }

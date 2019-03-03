@@ -1,6 +1,6 @@
 {
   "name": "context-2d-tracked",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "2D drawing context with pen and transform tracking",
   "main": "dist/Context2DTracked.js",
   "module": "src/index.js",
