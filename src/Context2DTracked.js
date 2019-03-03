@@ -85,6 +85,18 @@ module.exports = class Context2DTracked {
         return using.call(this, start, close, execute);
     }
 
+    usingScaledFontSize(execute) {
+        const tmp = this.context.font;
+        const info = tmp.split(' ');
+        const newSize = Math.round(parseInt(info[0]) * Math.abs(this.cf().a));
+        const start = () => {
+            this.context.font = newSize + 'px ' + info[info.length - 1];
+        };
+        const close = () => {
+            this.context.font = tmp;
+        };
+        return using.call(this, start, close, execute);
+    }
 
     /**
      * Print crosshairs at the current pen location and return their locations
@@ -177,7 +189,7 @@ module.exports = class Context2DTracked {
     }
 
     strokeRect(x, y, width, height) {
-        this.usingScaledLineWidth(()=>{
+        this.usingScaledLineWidth(() => {
             this._rect(...arguments, this.context.strokeRect);
         });
     }
@@ -188,13 +200,17 @@ module.exports = class Context2DTracked {
 
     fillText(text, x, y, maxWidth) {
         const t = this.cf().applyToPoint(x, y);
-        this.context.fillText(text, t.x, t.y, maxWidth);
+        this.usingScaledFontSize(() => {
+            this.context.fillText(text, t.x, t.y, maxWidth);
+        });
     }
 
     strokeText(text, x, y, maxWidth) {
         const t = this.cf().applyToPoint(x, y);
-        this.usingScaledLineWidth(()=>{
-            this.context.strokeText(text, t.x, t.y, maxWidth);
+        this.usingScaledLineWidth(() => {
+            this.usingScaledFontSize(() => {
+                this.context.strokeText(text, t.x, t.y, maxWidth);
+            });
         });
     }
 
@@ -289,7 +305,7 @@ module.exports = class Context2DTracked {
     stroke() {
         // have to manually do this because we're not scaling context
         if (this.context.strokeStyle !== "rgba(0, 0, 0, 0)") {
-            this.usingScaledLineWidth(()=>{
+            this.usingScaledLineWidth(() => {
                 this.context.stroke();
             });
         }
