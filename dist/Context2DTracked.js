@@ -441,6 +441,36 @@ module.exports = function () {
             this.bpenx = ex;
             this.bpeny = ey;
         }
+    }, {
+        key: "drawImage",
+        value: function drawImage(image, sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight) {
+            var s = this.cf().applyToPoint(sx, sy);
+            if (sWidth === undefined) {
+                this.context.drawImage(image, s.x, s.y);
+                return;
+            }
+            var sdim = this.cf().applyToPoint(sWidth, sHeight);
+            if (dx === undefined) {
+                this.context.drawImage(image, s.x, s.y, sdim.x, sdim.y);
+                return;
+            }
+            var d = this.cf().applyToPoint(dx, dy);
+            var ddim = this.cf().applyToPoint(dWidth, dHeight);
+            console.log(ddim);
+            this.context.drawImage(image, s.x, s.y, sdim.x, sdim.y, d.x, d.y, ddim.x, ddim.y);
+        }
+    }, {
+        key: "putImageData",
+        value: function putImageData(imageData, dx, dy, dirtyX, dirtyY, dirtyWidth, dirtyHeight) {
+            var d = this.cf().applyToPoint(dx, dy);
+            if (dirtyX === undefined) {
+                this.context.putImageData(imageData, d.x, d.y);
+                return;
+            }
+            var dirty = this.cf().applyToPoint(dirtyX, dirtyY);
+            var dim = this.cf().applyToPoint(dirtyWidth, dirtyHeight);
+            this.context.putImageData(imageData, d.x, d.y, dirty.x, dirty.y, dim.x, dim.y);
+        }
 
         // UNSUPPORTED functions (behaviour will be unexpected): ellipse, arcTo,
 
