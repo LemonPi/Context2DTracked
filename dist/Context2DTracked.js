@@ -358,8 +358,8 @@ module.exports = function () {
             var t0 = this.cf().applyToPoint(x0, y0);
             var t1 = this.cf().applyToPoint(x1, y1);
             // TODO problematic radius because we can't transform differently for x and y
-            var tr0 = this.cf().a * r0;
-            var tr1 = this.cf().a * r1;
+            var tr0 = Math.abs(this.cf().a * r0);
+            var tr1 = Math.abs(this.cf().a * r1);
             return this.context.createRadialGradient(t0.x, t0.y, tr0, t1.x, t1.y, tr1);
         }
 
@@ -456,7 +456,6 @@ module.exports = function () {
             }
             var d = this.cf().applyToPoint(dx, dy);
             var ddim = this.cf().applyToPoint(dWidth, dHeight);
-            console.log(ddim);
             this.context.drawImage(image, s.x, s.y, sdim.x, sdim.y, d.x, d.y, ddim.x, ddim.y);
         }
     }, {
