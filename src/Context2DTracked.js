@@ -224,8 +224,8 @@ module.exports = class Context2DTracked {
         const t0 = this.cf().applyToPoint(x0, y0);
         const t1 = this.cf().applyToPoint(x1, y1);
         // TODO problematic radius because we can't transform differently for x and y
-        const tr0 = this.cf().a * r0;
-        const tr1 = this.cf().a * r1;
+        const tr0 = Math.abs(this.cf().a * r0);
+        const tr1 = Math.abs(this.cf().a * r1);
         return this.context.createRadialGradient(t0.x, t0.y, tr0, t1.x, t1.y, tr1);
     }
 
